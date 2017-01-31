@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Page Title</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<link rel="stylesheet" href="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.css" />
+	<script src="https://code.jquery.com/jquery-1.11.1.min.js"></script>
+	<script src="https://code.jquery.com/mobile/1.4.5/jquery.mobile-1.4.5.min.js"></script>
+
+	<script>
+	function getLocation(callback) {
+		if (navigator.geolocation) {
+			navigator.geolocation.getCurrentPosition(callback);
+		}
+	}
+
+	function guessTrain(position) {
+		var lat = position.coords.latitude;
+		var lng = position.coords.longitude;
+        var now = new Date();
+
+        $.ajax('/trains/query', {
+            'data': {
+                'location': lat + ',' + lng,
+                'timestamp': now.toISOString(),
+                'direction': '1'
+            },
+            'dataType': 'json',
+            'success': onTrainGuessed
+        })
+    }
+
+    function onTrainGuessed(data) {
+        $('#guessed-train').html("I'm on train " + data.train).data('train', data.train);
+		$('#request-train').show();
+    }
+
+	function onRideRequested() {
+        $('#request-train').html('Lyft will be there!').button('disable');
+	}
+
+	function requestRide() {
+		var train = $('#guessed-train').data('train');
+		var station = $('#station').val();
+		var data = {
+			'station': station,
+			'train_no': train
+		};
+
+        $.post('/rides/requests', data, onRideRequested);
+	}
+
+	$(document).ready(function() {
+	    getLocation(guessTrain);
+		$('#request-train').click(requestRide);
+	});
+
+	</script>
+</head>
+<body>
+
+<div data-role="page">
+
+	<div data-role="header">
+		<h1>Hail from CalTrain</h1>
+	</div><!-- /header -->
+
+	<div role="main" class="ui-content">
+        <form>
+            <div class="ui-field-contain">
+                <label for="select-native-1">Your Station</label>
+                <select name="select-native-1" id="station">
+                    <option value="70112">Hillsdale</option>
+                </select>
+            </div>
+        </form>
+
+        <button class="ui-btn" id="guessed-train"></button>
+
+        <button class="ui-btn ui-btn-hidden" id="request-train">Request Lyft</button>
+	</div><!-- /content -->
+
+</div><!-- /page -->
+
+</body>
+</html>
